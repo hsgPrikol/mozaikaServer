@@ -176,6 +176,9 @@ void HandlerCommand::ProcessingEvent(QJsonObject* object, DataClientOnline* clie
     else if(commandFromClient == ProtocolTrade::___CMD_CREATE_CHAT){
         CreateChat(object, client);
     }
+    else if(commandFromClient == ProtocolTrade::___CMD_UPDATE_STATUS_MESSAGE){
+        MarkMessage(object, client);
+    }
 }
 
 void HandlerCommand::CreatePrivateChat(QJsonObject *object, DataClientOnline *client)
@@ -407,6 +410,40 @@ void HandlerCommand::CreateChat(QJsonObject *object, DataClientOnline* client)
     controller->addDialog(dialog);
 
     controller->addMessage(dialog->getID(),controller->getUser(client->login)->getID(),"Здравия желаю", QMap<QString,QByteArray>());
+}
+
+void HandlerCommand::MarkMessage(QJsonObject *object, DataClientOnline *client)
+{
+    ServerController* controller=ServerController::getInstance();
+
+    QString dialog_id = (*object)[ProtocolTrade::___ID_CHAT].toString();
+    QString message_id = (*object)[ProtocolTrade::___ID_MESSAGE].toString();
+    QString status = (*object)[ProtocolTrade::___STATUS_MESSAGE].toString();
+    int istatus = -1;
+    if(ProtocolTrade::___STS_TAKEN == status)
+        istatus = 2;
+    else if(ProtocolTrade::___STS_READ == status)
+        istatus = 3;
+    else
+        istatus = 1;
+
+    controller->markMessage(message_id.toInt(), dialog_id.toInt(), istatus);
+    NotifyStatusChanged(object, client);
+}
+
+void HandlerCommand::NotifyStatusChanged(QJsonObject *object, DataClientOnline *client)
+{
+    int dialog_id = (*object)[ProtocolTrade::___ID_CHAT].toInt();
+    ServerController* controller=ServerController::getInstance();
+
+    UserDialog dialog = controller->getDialog(dialog_id, controller->getUser(client->login)->getID());
+
+    foreach(User u, dialog.getMembers()){
+        DataClientOnline* dstClient = GeneralFunctionSocket::FindClient(u.getLogin());
+        if(dstClient == nullptr)
+            continue;
+        ProtocolTrade::SendTextMessage(ProtocolTrade::jsonObjectToString(object), dstClient->socket);
+    }
 }
 
 HandlerCommand::HandlerCommand(QObject *parent) : QObject(parent)
