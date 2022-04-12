@@ -42,10 +42,12 @@ void HandlerCommand::HandlerCmdSendMessage(QJsonObject *object, DataClientOnline
         // messageText
         // mapAttachment
 
-        // Устанавливаем статус сообщения "на сервере"
+        ServerController* controller = ServerController::getInstance();
 
-        // Получили новый id
-        QString newId = "id_postoanniy";
+        // Получили новый id и записываем в бд
+        QString newId = QString::number(controller->addMessage(idChat.toInt(), controller->getUser(client->login)->getID(), messageText, mapAttachment));
+
+        // Устанавливаем статус сообщения "на сервере"
 
         // Формирование ответа пользователю, который отправляет письмо
         QJsonObject* answer = new QJsonObject({
@@ -69,11 +71,20 @@ void HandlerCommand::HandlerCmdSendMessage(QJsonObject *object, DataClientOnline
 
 
         // тут получение логина или логинов адресатов по идентификатору диалога
-        QVector<QString> dstVectorUsers = {"1"};
+//        QVector<QString> dstVectorUsers =
+        int myIdUser = controller->getUser(client->login)->getID();
+        UserDialog usrDialog = controller->getDialog(idChat.toInt(), myIdUser);
+        QVector<QString> members = usrDialog.getMemberLogins();
 
-        for(int i = 0; i < dstVectorUsers.size(); i++)
+
+        for(int i = 0; i < members.size(); i++)
         {
-            DataClientOnline* dstUser = GeneralFunctionSocket::FindClient(dstVectorUsers[i]);
+            if(members[i] == client->login)
+            {
+                continue;
+            }
+
+            DataClientOnline* dstUser = GeneralFunctionSocket::FindClient(members[i]);
 
             if(dstUser)
             {
