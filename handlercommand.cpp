@@ -42,10 +42,13 @@ void HandlerCommand::HandlerCmdSendMessage(QJsonObject *object, DataClientOnline
         // messageText
         // mapAttachment
 
-        // Устанавливаем статус сообщения "на сервере"
+        ServerController* controller = ServerController::getInstance();
 
-        // Получили новый id
-        QString newId = "id_postoanniy";
+        // Получили новый id и записываем в бд
+        QString newId = QString::number(controller->addMessage(idChat.toInt(), controller->getUser(client->login)->getID(), messageText, mapAttachment));
+
+
+        // Устанавливаем статус сообщения "на сервере"
 
         // Формирование ответа пользователю, который отправляет письмо
         QJsonObject* answer = new QJsonObject({
@@ -53,7 +56,7 @@ void HandlerCommand::HandlerCmdSendMessage(QJsonObject *object, DataClientOnline
                                                   {ProtocolTrade::___ID_MESSAGE, QJsonValue(newId)},
                                                   {ProtocolTrade::___ID_CHAT, QJsonValue(idChat)},
                                                   {ProtocolTrade::___TMP_ID_MESSAGE, QJsonValue(tmpIdMessage)},
-                                                  {ProtocolTrade::___STATUS_MESSAGE, QJsonValue(ProtocolTrade::___STS_ON_SERVER)}
+                                                  {ProtocolTrade::___STATUS_MESSAGE, QJsonValue(ProtocolTrade::___STS_READ)}
                                               });
 
         ProtocolTrade::SendTextMessage(ProtocolTrade::jsonObjectToString(answer), client->socket);
@@ -64,16 +67,28 @@ void HandlerCommand::HandlerCmdSendMessage(QJsonObject *object, DataClientOnline
                                      {ProtocolTrade::___ID_MESSAGE, QJsonValue(newId)},
                                      {ProtocolTrade::___ID_CHAT, QJsonValue(idChat)},
                                      {ProtocolTrade::___TEXT_MESSAGE, QJsonValue(messageText)},
+                                     {ProtocolTrade::___BIRTH_DATE, QJsonValue(QDateTime::currentDateTime().toString())},
+                                     {ProtocolTrade::___LOGIN, QJsonValue(client->login)},
+                                     {ProtocolTrade::___STATUS_MESSAGE, QJsonValue(ProtocolTrade::___STS_TAKEN)},
                                      {ProtocolTrade::___ARR_ATTACHMENT, QJsonValue(arrAttachment)}
                                  });
 
 
         // тут получение логина или логинов адресатов по идентификатору диалога
-        QVector<QString> dstVectorUsers = {"1"};
+//        QVector<QString> dstVectorUsers =
+        int myIdUser = controller->getUser(client->login)->getID();
+        UserDialog usrDialog = controller->getDialog(idChat.toInt(), myIdUser);
+        QVector<QString> members = usrDialog.getMemberLogins();
 
-        for(int i = 0; i < dstVectorUsers.size(); i++)
+
+        for(int i = 0; i < members.size(); i++)
         {
-            DataClientOnline* dstUser = GeneralFunctionSocket::FindClient(dstVectorUsers[i]);
+            if(members[i] == client->login)
+            {
+                continue;
+            }
+
+            DataClientOnline* dstUser = GeneralFunctionSocket::FindClient(members[i]);
 
             if(dstUser)
             {
@@ -88,7 +103,9 @@ void HandlerCommand::HandlerCmdSendMessageAnswerFromClient(QJsonObject *object, 
 {
     QString idChat = ((*object)[ProtocolTrade::___ID_CHAT]).toString();
     QString idMessage = ((*object)[ProtocolTrade::___ID_MESSAGE]).toString();
-    QString statusMessage = ((*object)[ProtocolTrade::___ID_MESSAGE]).toString();
+    QString statusMessage = ((*object)[ProtocolTrade::___STATUS_MESSAGE]).toString();
+
+    MarkMessage(object, client);
 }
 
 void HandlerCommand::HandlerCmdAuthorization(QJsonObject *object, DataClientOnline *client)
@@ -176,6 +193,9 @@ void HandlerCommand::ProcessingEvent(QJsonObject* object, DataClientOnline* clie
     else if(commandFromClient == ProtocolTrade::___CMD_CREATE_CHAT){
         CreateChat(object, client);
     }
+    else if(commandFromClient == ProtocolTrade::___CMD_UPDATE_STATUS_MESSAGE){
+        MarkMessage(object, client);
+    }
 }
 
 void HandlerCommand::CreatePrivateChat(QJsonObject *object, DataClientOnline *client)
@@ -231,6 +251,7 @@ void HandlerCommand::HandlerReqGetMessageInDialog(QJsonObject *object, DataClien
     QString dialog_id = ((*object)[ProtocolTrade::___ID_CHAT]).toString();
 
     ServerController* controller = ServerController::getInstance();
+    controller->markMessages(dialog_id.toInt(), controller->getUser(client->login)->getID());
     UserDialog dialog = controller->getDialog(dialog_id.toInt(), controller->getUser(client->login)->getID());
 
     QJsonObject* answer = new QJsonObject({
@@ -407,6 +428,40 @@ void HandlerCommand::CreateChat(QJsonObject *object, DataClientOnline* client)
     controller->addDialog(dialog);
 
     controller->addMessage(dialog->getID(),controller->getUser(client->login)->getID(),"Здравия желаю", QMap<QString,QByteArray>());
+}
+
+void HandlerCommand::MarkMessage(QJsonObject *object, DataClientOnline *client)
+{
+    ServerController* controller=ServerController::getInstance();
+
+    QString dialog_id = (*object)[ProtocolTrade::___ID_CHAT].toString();
+    QString message_id = (*object)[ProtocolTrade::___ID_MESSAGE].toString();
+    QString status = (*object)[ProtocolTrade::___STATUS_MESSAGE].toString();
+    int istatus = -1;
+    if(ProtocolTrade::___STS_TAKEN == status)
+        istatus = 2;
+    else if(ProtocolTrade::___STS_READ == status)
+        istatus = 3;
+    else
+        istatus = 1;
+
+    controller->markMessage(message_id.toInt(), dialog_id.toInt(), istatus);
+    NotifyStatusChanged(object, client);
+}
+
+void HandlerCommand::NotifyStatusChanged(QJsonObject *object, DataClientOnline *client)
+{
+    int dialog_id = (*object)[ProtocolTrade::___ID_CHAT].toInt();
+    ServerController* controller=ServerController::getInstance();
+
+    UserDialog dialog = controller->getDialog(dialog_id, controller->getUser(client->login)->getID());
+
+    foreach(User u, dialog.getMembers()){
+        DataClientOnline* dstClient = GeneralFunctionSocket::FindClient(u.getLogin());
+        if(dstClient == nullptr)
+            continue;
+        ProtocolTrade::SendTextMessage(ProtocolTrade::jsonObjectToString(object), dstClient->socket);
+    }
 }
 
 HandlerCommand::HandlerCommand(QObject *parent) : QObject(parent)

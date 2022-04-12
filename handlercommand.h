@@ -44,6 +44,12 @@ private:
     /// Обработка запроса на создание чата
     static void CreateChat(QJsonObject *object, DataClientOnline* client);
 
+    /// Обработка изменения статуса сообщения
+    static void MarkMessage(QJsonObject* object, DataClientOnline* client);
+
+    /// Оповещение пользователей о прочитанном сообщении
+    static void NotifyStatusChanged(QJsonObject* object, DataClientOnline *client);
+
 public:
     explicit HandlerCommand(QObject *parent = nullptr);
 

@@ -1,6 +1,8 @@
 #include "servercontroller.h"
 
-QString ServerController::pathGarbage="C:/Users/Tihon/Desktop/hack_new/secondday/build-super_server-3-Debug/debug/super_garbage/";
+//QString ServerController::pathGarbage="C:\\Users\\test\\Desktop\\HackathonApril\\super_garbage\\";
+
+QString ServerController::pathGarbage="C:\\Users\\Tihon\\Desktop\\hack_new\\secondday\\build-super_server-3-Debug\\debug\\super_garbage\\";
 
 ServerController* ServerController::instance = nullptr;
 
@@ -141,7 +143,7 @@ int ServerController::addMessage(int dialog_id, int sender_id, QString msg, QMap
                 .arg(dialog_id)
                 .arg(message_id)
                 .arg(m)
-                .arg((m==sender_id ? 3:1 ));
+                .arg((m==sender_id ? 3:2 ));
         QSqlQuery queryStatus(textStatus);
         queryStatus.exec();
     }
@@ -172,6 +174,33 @@ int ServerController::markMessage(int m_id, int d_id, int status)
     query.exec();
 
     return 0;
+}
+
+int ServerController::markMessages(int d_id ,int user_id)
+{
+    UserDialog d= getDialog(d_id,user_id);
+
+    foreach(auto m, d.getMessages()){
+        QSqlQuery query(QString("UPDATE public.status SET status = %1 WHERE dialog_id = %2 AND message_id = %3 user_id = %4;")
+                        .arg("3")
+                        .arg(d_id)
+                        .arg(m.getId())
+                        .arg(user_id));
+        query.exec();
+
+        QSqlQuery query2(QString("UPDATE public.status SET status = %1 WHERE dialog_id = %2 AND message_id = %3 user_id = %4;")
+                        .arg("3")
+                        .arg(d_id)
+                        .arg(m.getId())
+                        .arg(m.getSender_id()));
+        query2.exec();
+    }
+
+    QSqlQuery query(QString("UPDATE public.status SET status = %1 WHERE dialog_id = %2 AND user_id = %3;")
+                    .arg("3")
+                    .arg(d_id)
+                    .arg(user_id));
+    query.exec();
 }
 
 int ServerController::addFile(QByteArray bytes, QString name, QString type)
