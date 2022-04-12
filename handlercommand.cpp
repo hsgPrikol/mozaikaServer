@@ -47,6 +47,7 @@ void HandlerCommand::HandlerCmdSendMessage(QJsonObject *object, DataClientOnline
         // Получили новый id и записываем в бд
         QString newId = QString::number(controller->addMessage(idChat.toInt(), controller->getUser(client->login)->getID(), messageText, mapAttachment));
 
+
         // Устанавливаем статус сообщения "на сервере"
 
         // Формирование ответа пользователю, который отправляет письмо
@@ -55,7 +56,7 @@ void HandlerCommand::HandlerCmdSendMessage(QJsonObject *object, DataClientOnline
                                                   {ProtocolTrade::___ID_MESSAGE, QJsonValue(newId)},
                                                   {ProtocolTrade::___ID_CHAT, QJsonValue(idChat)},
                                                   {ProtocolTrade::___TMP_ID_MESSAGE, QJsonValue(tmpIdMessage)},
-                                                  {ProtocolTrade::___STATUS_MESSAGE, QJsonValue(ProtocolTrade::___STS_ON_SERVER)}
+                                                  {ProtocolTrade::___STATUS_MESSAGE, QJsonValue(ProtocolTrade::___STS_READ)}
                                               });
 
         ProtocolTrade::SendTextMessage(ProtocolTrade::jsonObjectToString(answer), client->socket);
@@ -66,6 +67,9 @@ void HandlerCommand::HandlerCmdSendMessage(QJsonObject *object, DataClientOnline
                                      {ProtocolTrade::___ID_MESSAGE, QJsonValue(newId)},
                                      {ProtocolTrade::___ID_CHAT, QJsonValue(idChat)},
                                      {ProtocolTrade::___TEXT_MESSAGE, QJsonValue(messageText)},
+                                     {ProtocolTrade::___BIRTH_DATE, QJsonValue(QDateTime::currentDateTime().toString())},
+                                     {ProtocolTrade::___LOGIN, QJsonValue(client->login)},
+                                     {ProtocolTrade::___STATUS_MESSAGE, QJsonValue(ProtocolTrade::___STS_TAKEN)},
                                      {ProtocolTrade::___ARR_ATTACHMENT, QJsonValue(arrAttachment)}
                                  });
 
@@ -99,7 +103,9 @@ void HandlerCommand::HandlerCmdSendMessageAnswerFromClient(QJsonObject *object, 
 {
     QString idChat = ((*object)[ProtocolTrade::___ID_CHAT]).toString();
     QString idMessage = ((*object)[ProtocolTrade::___ID_MESSAGE]).toString();
-    QString statusMessage = ((*object)[ProtocolTrade::___ID_MESSAGE]).toString();
+    QString statusMessage = ((*object)[ProtocolTrade::___STATUS_MESSAGE]).toString();
+
+    MarkMessage(object, client);
 }
 
 void HandlerCommand::HandlerCmdAuthorization(QJsonObject *object, DataClientOnline *client)
@@ -245,6 +251,7 @@ void HandlerCommand::HandlerReqGetMessageInDialog(QJsonObject *object, DataClien
     QString dialog_id = ((*object)[ProtocolTrade::___ID_CHAT]).toString();
 
     ServerController* controller = ServerController::getInstance();
+    controller->markMessages(dialog_id.toInt(), controller->getUser(client->login)->getID());
     UserDialog dialog = controller->getDialog(dialog_id.toInt(), controller->getUser(client->login)->getID());
 
     QJsonObject* answer = new QJsonObject({

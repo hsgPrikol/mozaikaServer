@@ -38,6 +38,7 @@ public:
 
     int addMessage(int dialog_id, int sender_id, QString msg, QMap<QString, QByteArray> files);
     int markMessage(int m_id, int d_id, int status);
+    int markMessages(int user_id, int d_id);
     int addFile(QByteArray bytes, QString name, QString type);
 
     int confirmAuthorization(QString login, QString passhash);
