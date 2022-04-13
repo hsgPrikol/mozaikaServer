@@ -14,5 +14,7 @@ int main(int argc, char *argv[])
 //    controller->addMessage(4,2,"Кто не спит?",QMap<QString,QByteArray>());
     ServerGeneral server;
 
+    HandlerCommand::ReadAllMessagesByChat(nullptr, nullptr);
+
     return a.exec();
 }

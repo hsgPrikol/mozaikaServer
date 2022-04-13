@@ -323,6 +323,31 @@ int ServerController::getCountDayFromDembel()
     return (QDate::currentDate().daysTo(date));
 }
 
+QVector<QString> ServerController::getNetUsers(QString login)
+{
+    auto str = QString("select login from \"user\" where id = ANY(SELECT distinct(user_id) FROM public.member where dialog_id = any(select dialog_id from member inner join \"user\" on \"user\".id = user_id where login = '%1') except select user_id from member inner join \"user\" on \"user\".id = user_id where login = '%1');").arg(login.toLower());
+    QSqlQuery query(str);
+
+    QVector<QString> logins;
+
+    while(query.next()){
+        logins.append(svalue(0));
+    }
+
+    return logins;
+}
+
+void ServerController::readAllMessagesByChat(QString login, int chat_id)
+{
+    User* user = getUser(login);
+    int user_id = user->getID();
+    delete user;
+    auto str = QString("UPDATE public.status SET status=3 WHERE dialog_id = %1 and user_id = %2;").arg(chat_id).arg(user_id);
+    QSqlQuery query(str);
+
+    query.exec();
+}
+
 int ServerController::loadUsers()
 {
     QSqlQuery query("SELECT id, login, name, avatar_id, birthday FROM \"user\";");

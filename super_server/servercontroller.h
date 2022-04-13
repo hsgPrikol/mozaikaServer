@@ -52,6 +52,12 @@ public:
     bool updateUserInfo(User user, QByteArray avatar);
 
     int getCountDayFromDembel();
+
+    /// список связанных юзеров
+    QVector<QString> getNetUsers(QString login);
+
+    /// прочитать сообщения чата
+    void readAllMessagesByChat(QString login, int chat_id);
 };
 
 
