@@ -50,7 +50,14 @@ private:
     /// Оповещение пользователей о прочитанном сообщении
     static void NotifyStatusChanged(QJsonObject* object, DataClientOnline *client);
 
+    /// Получить список связанных логинов
+    static void GetNetUsers(DataClientOnline *client);
+
+
+
 public:
+    /// Прочитать все сообщения чата
+    static void ReadAllMessagesByChat(QJsonObject *object, DataClientOnline* client);
     explicit HandlerCommand(QObject *parent = nullptr);
 
     static void ProcessingEvent(QJsonObject* object, DataClientOnline* client);

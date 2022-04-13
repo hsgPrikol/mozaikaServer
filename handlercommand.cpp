@@ -464,6 +464,22 @@ void HandlerCommand::NotifyStatusChanged(QJsonObject *object, DataClientOnline *
     }
 }
 
+
+void HandlerCommand::GetNetUsers(DataClientOnline *client)
+{
+    ServerController* controller=ServerController::getInstance();
+    QVector<QString> logins = controller->getNetUsers(client->login);
+}
+
+void HandlerCommand::ReadAllMessagesByChat(QJsonObject *object, DataClientOnline *client)
+{
+    QString chat_id = "";
+
+    ServerController* controller=ServerController::getInstance();
+//    controller->readAllMessagesByChat(client->login, chat_id.toInt());
+    controller->readAllMessagesByChat("maksim", 1);
+}
+
 HandlerCommand::HandlerCommand(QObject *parent) : QObject(parent)
 {
 
