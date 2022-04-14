@@ -276,10 +276,11 @@ bool ServerController::addMemeber(int dialog_id, int member_id)
 
 bool ServerController::addDialog(UserDialog* dialog)
 {
-    QSqlQuery query(QString("INSERT INTO public.dialog(name, avatar_id, isGroup) VALUES ('%1', %2, %3) RETURNING id;")
-                    .arg(dialog->getName())
-                    .arg(dialog->getAvatarID())
-                    .arg(dialog->getIsGroup()));
+    QString str=QString("INSERT INTO public.dialog(name, avatar_id, is_group) VALUES ('%1', %2, %3) RETURNING id;")
+            .arg(dialog->getName())
+            .arg(dialog->getAvatarID())
+            .arg(dialog->getIsGroup()?"true":"false");
+    QSqlQuery query(str);
     query.first();
     dialog->setID(ivalue(0));
     int member_id;

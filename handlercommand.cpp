@@ -208,11 +208,12 @@ void HandlerCommand::CreatePrivateChat(QJsonObject *object, DataClientOnline *cl
         bool status = (*object)[ProtocolTrade::___STATUS] == ProtocolTrade::___STS_DONE;
         QJsonObject* answer;
 
-        QString ip = client->socket->peerAddress().toString();
-        if(ip == "::1")
-        {
-            ip = "localhost";
-        }
+        QString ip = "localhost";
+//        QString ip = client->socket->peerAddress().toString();
+//        if(ip == "::1")
+//        {
+//            ip = "localhost";
+//        }
 
 
         if(status)
