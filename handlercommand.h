@@ -58,9 +58,19 @@ private:
 public:
     /// Прочитать все сообщения чата
     static void ReadAllMessagesByChat(QJsonObject *object, DataClientOnline* client);
+
     explicit HandlerCommand(QObject *parent = nullptr);
 
     static void ProcessingEvent(QJsonObject* object, DataClientOnline* client);
+
+    /// Рассылка нового статуса пользователя его друзьям
+    static void HandlerUserStautusChange(DataClientOnline *client, QString newStatus);
+
+    /// Обработчик отключения клиента от сети (рассылка обновленного статуса его друзьям)
+    static void HandlerUserDisconect(DataClientOnline *client);
+
+    /// Обработчик подключения клиента (рассылка обновленного статуса его друзьям)
+    static void HandlerUserConnect(DataClientOnline *client);
 
 signals:
 

@@ -98,11 +98,13 @@ void ServerGeneral::socketDisconnected()
 
     QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
 
-    if (pClient)
-    {
-        GeneralFunctionSocket::RemoveClient(pClient);
-        pClient->deleteLater();
-    }
+    HandlerCommand::HandlerUserDisconect(GeneralFunctionSocket::FindClient(pClient));
+
+//    if (pClient)
+//    {
+//        GeneralFunctionSocket::RemoveClient(pClient);
+//        pClient->deleteLater();
+//    }
 }
 
 void ServerGeneral::onSslErrors(const QList<QSslError> &errors)

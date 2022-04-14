@@ -121,6 +121,9 @@ void HandlerCommand::HandlerCmdAuthorization(QJsonObject *object, DataClientOnli
     int autoriz = controller->confirmAuthorization(login,password);
 
     if(autoriz == 1){
+
+
+
         User* user=controller->getUser(login);
         client->isAuthorized = true;
         client->login = user->getLogin();
@@ -137,6 +140,8 @@ void HandlerCommand::HandlerCmdAuthorization(QJsonObject *object, DataClientOnli
 
         answer->insert(ProtocolTrade::___AVATAR, *avatar);
         answer->insert(ProtocolTrade::___BIRTH_DATE, QJsonValue(user->getBirthDate().toString()));
+
+        HandlerUserConnect(client);
     }
     else{
         answer->insert(ProtocolTrade::___STATUS, QJsonValue(ProtocolTrade::___STS_NOPE));
@@ -195,6 +200,10 @@ void HandlerCommand::ProcessingEvent(QJsonObject* object, DataClientOnline* clie
     }
     else if(commandFromClient == ProtocolTrade::___CMD_UPDATE_STATUS_MESSAGE){
         MarkMessage(object, client);
+    }
+    else if(commandFromClient == ProtocolTrade::___CMD_READ_ALL_MESSAGE_BY_CHAT)
+    {
+        ReadAllMessagesByChat(object, client);
     }
 }
 
@@ -471,13 +480,77 @@ void HandlerCommand::GetNetUsers(DataClientOnline *client)
     QVector<QString> logins = controller->getNetUsers(client->login);
 }
 
+void HandlerCommand::HandlerUserStautusChange(DataClientOnline *client, QString newStatus)
+{
+    QJsonObject* answer = new QJsonObject({
+                                              {ProtocolTrade::___COMMAND, QJsonValue(ProtocolTrade::___CMD_UPDATE_STATUS_USER)},
+                                              {ProtocolTrade::___STATUS_USER, QJsonValue(newStatus)},
+                                              {ProtocolTrade::___LOGIN, QJsonValue(client->login)}
+                                          });
+
+    QString answerString = ProtocolTrade::jsonObjectToString(answer);
+
+    ServerController* controller = ServerController::getInstance();
+
+    QVector<QString> netUsers = controller->getNetUsers(client->login);
+
+    DataClientOnline* friendClient;
+
+    for(int i = 0; i < netUsers.size(); i++)
+    {
+        friendClient = GeneralFunctionSocket::FindClient(netUsers[i]);
+
+        if(friendClient)
+        {
+            ProtocolTrade::SendTextMessage(answerString, friendClient->socket);
+        }
+    }
+}
+
+void HandlerCommand::HandlerUserDisconect(DataClientOnline *client)
+{
+    HandlerUserStautusChange(client, ProtocolTrade::___STS_OFFLINE);
+
+    GeneralFunctionSocket::RemoveClient(client->socket);
+}
+
+void HandlerCommand::HandlerUserConnect(DataClientOnline *client)
+{
+    HandlerUserStautusChange(client, ProtocolTrade::___STS_ONLINE);
+}
+
 void HandlerCommand::ReadAllMessagesByChat(QJsonObject *object, DataClientOnline *client)
 {
-    QString chat_id = "";
-
     ServerController* controller=ServerController::getInstance();
-//    controller->readAllMessagesByChat(client->login, chat_id.toInt());
-    controller->readAllMessagesByChat("maksim", 1);
+
+    int chat_id = (*object)[ProtocolTrade::___ID_CHAT].toString().toInt();
+    int id_client = controller->getUser(client->login)->getID();
+
+    controller->markMessages(id_client, chat_id);
+
+    UserDialog userDialog = controller->getDialog(chat_id, id_client);
+    QVector<User> usersFromDialog = userDialog.getMembers();
+
+    DataClientOnline* memberOnline;
+
+    QJsonObject* answer = new QJsonObject({
+                                              {ProtocolTrade::___COMMAND, QJsonValue(ProtocolTrade::___CMD_UDATE_CHAT)},
+                                              {ProtocolTrade::___ID_CHAT, QJsonValue(QString::number(chat_id))}
+                                          });
+
+    QString answerString = ProtocolTrade::jsonObjectToString(answer);
+
+    for(int i = 0; i < usersFromDialog.size(); i++)
+    {
+        memberOnline = GeneralFunctionSocket::FindClient(usersFromDialog[i].getLogin());
+
+        if(memberOnline)
+        {
+            ProtocolTrade::SendTextMessage(answerString, memberOnline->socket);
+        }
+    }
+
+//    controller->readAllMessagesByChat(client->login, chat_id);
 }
 
 HandlerCommand::HandlerCommand(QObject *parent) : QObject(parent)
