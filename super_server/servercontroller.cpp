@@ -2,7 +2,10 @@
 
 //QString ServerController::pathGarbage="C:\\Users\\test\\Desktop\\HackathonApril\\super_garbage\\";
 
-QString ServerController::pathGarbage="C:\\Users\\Tihon\\Desktop\\hack_new\\secondday\\build-super_server-3-Debug\\debug\\super_garbage\\";
+//QString ServerController::pathGarbage="C:\\Users\\Tihon\\Desktop\\hack_new\\secondday\\build-super_server-3-Debug\\debug\\super_garbage\\";
+
+QString ServerController::pathGarbage="C:\\Users\\rota\\Documents\\build-Server-MinGW64-Debug\\super_garbage\\";
+
 
 ServerController* ServerController::instance = nullptr;
 
