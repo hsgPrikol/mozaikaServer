@@ -2,9 +2,9 @@
 
 //QString ServerController::pathGarbage="C:\\Users\\test\\Desktop\\HackathonApril\\super_garbage\\";
 
-//QString ServerController::pathGarbage="C:\\Users\\Tihon\\Desktop\\hack_new\\secondday\\build-super_server-3-Debug\\debug\\super_garbage\\";
+QString ServerController::pathGarbage="C:\\Users\\Tihon\\Desktop\\hack_new\\secondday\\build-super_server-3-Debug\\debug\\super_garbage\\";
 
-QString ServerController::pathGarbage="C:\\Users\\rota\\Documents\\build-Server-MinGW64-Debug\\super_garbage\\";
+//QString ServerController::pathGarbage="C:\\Users\\rota\\Documents\\build-Server-MinGW64-Debug\\super_garbage\\";
 
 
 ServerController* ServerController::instance = nullptr;
@@ -156,7 +156,8 @@ int ServerController::addMessage(int dialog_id, int sender_id, QString msg, QMap
     for (int i=0; i<files.count() ; i++ )
     {
         QString key=files.keys()[i];
-        int f_id = addFile(files[key],key, key.remove(0,key.indexOf(".")+1));
+        QString type=key.remove(0,key.indexOf(".")+1);
+        int f_id = addFile(files[files.keys()[i]],files.keys()[i], type);
 
         QSqlQuery query_f(QString("INSERT INTO public.content(message_id, dialog_id, file_id) VALUES (%1, %2, %3)")
                           .arg(message_id)
@@ -219,7 +220,7 @@ int ServerController::addFile(QByteArray bytes, QString name, QString type)
     out.close();
 
     QSqlQuery query(QString("INSERT INTO public.files(path, name, type) VALUES ('%1', '%2', '%3') RETURNING id;")
-                    .arg(fileName)
+                    .arg(fileName+".spg")
                     .arg(name)
                     .arg(type));
     query.first();
